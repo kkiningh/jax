@@ -263,7 +263,7 @@ def write_bazelrc(*, python_bin_path, remote_build,
                   rocm_amdgpu_targets, bazel_options, target_cpu_features,
                   wheel_cpu, enable_mkl_dnn, use_clang, clang_path,
                   clang_major_version, enable_cuda, enable_nccl, enable_rocm,
-                  build_gpu_plugin):
+                  build_gpu_plugin, python_version):
   tf_cuda_paths = []
 
   with open("../.jax_configure.bazelrc", "w") as f:
@@ -343,8 +343,10 @@ def write_bazelrc(*, python_bin_path, remote_build,
         f.write("build --config=nonccl\n")
     if build_gpu_plugin:
       f.write("build --config=cuda_plugin\n")
-
-
+    if python_version:
+      f.write(
+        "build --repo_env JAX_PYTHON_VERSION=\"{python_version}\"".format(
+            python_version=python_version))
 BANNER = r"""
      _   _  __  __
     | | / \ \ \/ /
@@ -541,6 +543,10 @@ def main():
       "--editable",
       action="store_true",
       help="Create an 'editable' jaxlib build instead of a wheel.")
+  parser.add_argument(
+      "--python_version",
+      default=None,
+      help="hermetic python version, e.g., 3.10.")
   add_boolean_argument(
       parser,
       "configure_only",
@@ -652,6 +658,7 @@ def main():
       enable_nccl=args.enable_nccl,
       enable_rocm=args.enable_rocm,
       build_gpu_plugin=args.build_gpu_plugin,
+      python_version=args.python_version if args.python_version else ".".join(map(str, python_version))
   )
 
   if args.configure_only:
